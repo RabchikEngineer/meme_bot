@@ -1,0 +1,31 @@
+{
+    "test_preset": {
+        "x": 400,
+        "y": 400,
+        "vid_durations": [
+            3,
+            3,
+            3
+        ],
+        "folder": "test_folder",
+        "audio_dipl": 0
+    },
+    "\u0432 \u0433\u043b\u0430\u0432\u043d\u044b\u0445 \u0440\u043e\u043b\u044f\u0445": {
+        "x": 400,
+        "y": 400,
+        "vid_durations": [
+            1.5,
+            2,
+            3.08,
+            4.05,
+            3,
+            3.3,
+            3.7,
+            3,
+            3,
+            1.5
+        ],
+        "folder": "starring",
+        "audio_dipl": -1.37
+    }
+}
