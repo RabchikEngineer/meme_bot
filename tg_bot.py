@@ -13,6 +13,8 @@ from video_script import create_video
 # Variables
 config_path = 'bot_config.json'
 presets_path = 'presets.json'
+admin_list=['rabchik_engineer','shishka933','Timventor','vija_tyan']
+# admin_list=[]
 
 # Read config
 with open(config_path, 'r') as f:
@@ -33,7 +35,13 @@ async def picture_req(event):
 
 async def choise_list(event):
     global cond
-    await event.respond('Выбери функцию:\n1 - Квадрат\n2 - Видосик')
+    sender = await event.get_sender()
+    sender_dict = sender.to_dict()
+    sender_username=sender_dict['username']
+    if sender_username in admin_list:
+        await event.respond('Выбери функцию:\n1 - Квадрат\n2 - Видосик')
+    else:
+        await event.respond('Выбери функцию:\n1 - Квадрат')
     cond = 'choise'
 
 async def vid_presets_list(event):
