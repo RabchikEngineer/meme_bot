@@ -1,6 +1,8 @@
 
 videos
 pictures
+!videos/starring/0.png
+!videos/starring/music.mp3
 commands.log
 test.json
 test.py
