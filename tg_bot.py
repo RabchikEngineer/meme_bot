@@ -86,7 +86,7 @@ async def bot():
                 if cond == 'choise':
                     cond = event.message.message
                     if not cond in ['1','2']:
-                        log(event)
+                        await log(event)
 
 
                 if cond == '1':
