@@ -51,10 +51,8 @@ async def vid_presets_list(event):
 
 def get_pres_list(dict):
     msg = ''
-    k = 1
     for i in dict.keys():
         msg += f'{i}\n'
-        k += 1
     return msg
 
 
@@ -79,7 +77,8 @@ async def bot():
 
                 if cond == 'choise':
                     cond = event.message.message
-                    print(cond)
+                    if not cond in ['1','2']:
+                        print(cond)
 
 
                 if cond == '1':
