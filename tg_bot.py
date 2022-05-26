@@ -27,7 +27,7 @@ cond = ''
 choise = ''
 pic_num=1
 
-def log(event):
+async def log(event):
     sender = await event.get_sender()
     sender_dict = sender.to_dict()
     with open('log.txt', 'a') as f:
