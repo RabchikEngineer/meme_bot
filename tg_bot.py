@@ -27,6 +27,14 @@ cond = ''
 choise = ''
 pic_num=1
 
+def log(event):
+    sender = await event.get_sender()
+    sender_dict = sender.to_dict()
+    with open('log.txt', 'a') as f:
+        f.write(f'{sender_dict.get("username")} {event.message.message}')
+    print(f'{sender_dict.get("username")} {event.message.message}')
+
+
 async def picture_req(event):
     global pic_num
     pic_num += 1
@@ -78,7 +86,7 @@ async def bot():
                 if cond == 'choise':
                     cond = event.message.message
                     if not cond in ['1','2']:
-                        print(cond)
+                        log(event)
 
 
                 if cond == '1':
