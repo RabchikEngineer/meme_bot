@@ -22,7 +22,7 @@ log_format='<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</
 logger.level("TEXT", no=7, color="<blue>", icon="t")
 logger.level("PIC", no=8, color="<cyan>", icon="P")
 logger.remove()
-logger.add("log_test.txt", level=2, format=log_format)
+logger.add(conf["log_filename"], level=2, format=log_format)
 logger.add(sys.stdout, level=2, format=log_format)
 
 def get_file_extension(mime_type):
@@ -50,12 +50,12 @@ async def bot():
         async def handler(event):
             if event.message.message != '/start':
                 message=event.message
+                sender = (await event.get_sender()).to_dict()
                 if message.media:
                     await event.respond('Секунду...')
                     # print(event.message)
                     sender_id = message.peer_id.user_id
                     time_now = time.time()
-                    sender = (await event.get_sender()).to_dict()
                     file_extension=get_file_extension(event.message.file.mime_type)
                     if file_extension:
                         filename = f'pictures/' \
@@ -73,7 +73,8 @@ async def bot():
                         await event.respond('Неправильный тип файла')
                         # cond='choice'
                 else:
-                    logger.log("TEXT", message.message)
+                    logger.log("TEXT", f'{sender.get("username")} {sender.get("first_name")} {sender.get("last_name")} --- '+
+                               message.message)
                     await event.respond('Я не принимаю сообщения без фоток')
 
         await tgclient.run_until_disconnected()
