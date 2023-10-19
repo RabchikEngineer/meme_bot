@@ -1,0 +1,9 @@
+{
+  "directories": {
+    "memes_dir": "memes/",
+    "temp_directory": "temp/"
+  },
+  "colors": {
+  },
+  "debug": true
+}
