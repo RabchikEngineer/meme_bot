@@ -19,11 +19,16 @@ small_text_size = int(res * sizes['small_text_size'] / 300)
 rect_indent = int(res * sizes['rect_indent'] / 300)
 rect_width = int(res * sizes['rect_width'] / 300)
 
+
 def get_sizes(draw,text,font):
     x0,y0,x1,y1=draw.textbbox((0, 0), text, font=font)
     w=x1-x0
     h=y1-y0
     return w,h
+
+
+def get_font(size):
+    return ImageFont.truetype(font='arial.ttf', size=size, encoding='unic')
 
 
 def make_picture(text, filename):
@@ -52,10 +57,10 @@ def make_picture(text, filename):
             image.paste(image2,(startx,starty), image2)
             draw.rectangle((startx-rect_indent,starty-rect_indent,startx+x+rect_indent,starty+y+rect_indent),
                            width = rect_width, outline=(255,255,255))
-            font = ImageFont.truetype(font='arial.ttf', size=font_size, encoding='unic')
+            font = get_font(font_size)
             w, h = get_sizes(draw, text_single, font)
             while w>res:
-                font = ImageFont.truetype(font='arial.ttf', size=font_size, encoding='unic')
+                font = get_font(font_size)
                 w, h = get_sizes(draw, text_single, font)
                 font_size-=1
             draw.text((startx+int(x/2)-int(w/2),starty+y+y_text_indent-int(h/2)), text_single, font=font, fill=(255,255,255,255))
@@ -64,10 +69,10 @@ def make_picture(text, filename):
             image=image=Image.new('RGBA',(x,y+y_text_add),(0,0,0))
             image.paste(image2, (0, 0), image2)
             draw = ImageDraw.Draw(image)
-            font = ImageFont.truetype(font='arial.ttf', size=font_size, encoding='unic')
+            font = get_font(font_size)
             w, h = get_sizes(draw, text_single, font)
             while w > res:
-                font = ImageFont.truetype(font='arial.ttf', size=font_size, encoding='unic')
+                font = get_font(font_size)
                 w, h = get_sizes(draw, text_single, font)
                 font_size -= 1
             draw.text((int(x/2)-int(w/2),y-int(h/2)), text_single, font=font, fill=(255,255,255,255))
@@ -79,4 +84,4 @@ def make_picture(text, filename):
         image.save(filename_end,'PNG')
     return filename_end
 
-make_picture("some text big\nsome text small\nsome text small\n\nnext_text",'1.jpg')
+# make_picture("some text big\nsome text small\nsome text small\n\nnext_text",'1.jpg')
