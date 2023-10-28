@@ -20,6 +20,10 @@ rect_indent = int(res * sizes['rect_indent'] / 300)
 rect_width = int(res * sizes['rect_width'] / 300)
 
 
+if not hasattr(Image, 'Resampling'):  # Pillow<9.0
+    Image.Resampling = Image
+
+
 def get_sizes(draw,text,font):
     x0,y0,x1,y1=draw.textbbox((0, 0), text, font=font)
     w=x1-x0
