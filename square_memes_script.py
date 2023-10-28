@@ -1,34 +1,82 @@
 from PIL import Image,ImageDraw,ImageFont
+import json
 
-def make_picture(text,file_name):
-    num=text.count('\n')
-    text=text.split(sep='\n')
-    file_name_end = file_name[:-4] + '_done.png'
-    for i in range(num+1):
-        text_small=text[i]
-        font_size=20
-        if i==0:
-            image2=Image.open(file_name).convert('RGBA')
+config_path = 'config.json'
+
+with open(config_path, 'r') as f:
+    conf = json.load(f)
+
+sizes=conf['sizes']
+res = sizes['resolution']
+x_full_add = int(res * sizes['x_full_add'] / 300)
+y_full_add = int(res * sizes['y_full_add'] / 300)
+y_text_add = int(res * sizes['y_text_add'] / 300)
+y_text_indent = int(res * sizes['y_text_indent'] / 300)
+x_indent = int(res * sizes['x_indent'] / 300)
+y_indent = int(res * sizes['y_indent'] / 300)
+big_text_size = int(res * sizes['big_text_size'] / 300)
+small_text_size = int(res * sizes['small_text_size'] / 300)
+rect_indent = int(res * sizes['rect_indent'] / 300)
+rect_width = int(res * sizes['rect_width'] / 300)
+
+def get_sizes(draw,text,font):
+    x0,y0,x1,y1=draw.textbbox((0, 0), text, font=font)
+    w=x1-x0
+    h=y1-y0
+    return w,h
+
+
+def make_picture(text, filename):
+    levels_num=text.count('\n\n')
+    text_list=[a.split('\n') for a in text.split('\n\n')]
+    text_list_extended=[]
+    _=[[text_list_extended.append((a[i],"full" if i==0 else "text")) for i in range(len(a))] for a in text_list]
+    filename_end = filename[:-4] + '_done.png'
+    init_pic=True
+    for text_single, mode in text_list_extended:
+        if text_single.find("\n"):
+            text_small="".join(text_single.split(sep='\n')[1:])
+        if init_pic:
+            image2 = Image.open(filename).convert('RGBA')
         else:
-            image2 = Image.open(file_name_end).convert('RGBA')
+            image2 = Image.open(filename_end).convert('RGBA')
         x,y=image2.size
-        image2=image2.resize((300,int(300*y/x)),Image.ANTIALIAS)
+        image2=image2.resize((res,int(res*y/x)),Image.Resampling.LANCZOS)
         x,y=image2.size
-        image=Image.new('RGBA',(x+50,y+70),(0,0,0))
-        draw = ImageDraw.Draw(image)
-        startx=int((x+50)/2)-int(x/2)
-        starty=int((y+50)/2)-int(y/2)
-        image.paste(image2,(startx,starty),  image2)
-        draw.rectangle((startx-5,starty-5,startx+x+5,starty+y+5),outline=(255,255,255))
-        font = ImageFont.truetype(font='arial.ttf', size=font_size, encoding='unic')
-        # text='HELLO пидарас'
-        w, h = draw.textsize(text_small,font=font)
-        while w>300:
+        if mode=="full":
+            font_size = big_text_size
+            image=Image.new('RGBA', (x + x_full_add, y + y_full_add), (0, 0, 0))
+            draw = ImageDraw.Draw(image)
+            startx=int((x+x_indent)/2)-int(x/2)
+            starty=int((y+y_indent)/2)-int(y/2)
+            image.paste(image2,(startx,starty), image2)
+            draw.rectangle((startx-rect_indent,starty-rect_indent,startx+x+rect_indent,starty+y+rect_indent),
+                           width = rect_width, outline=(255,255,255))
             font = ImageFont.truetype(font='arial.ttf', size=font_size, encoding='unic')
-            w, h = draw.textsize(text_small, font=font)
-            font_size-=1
-        draw.text((startx+int(x/2)-int(w/2),starty+y+20-int(h/2)), text_small, font=font, fill=(255,255,255,255))
+            w, h = get_sizes(draw, text_single, font)
+            while w>res:
+                font = ImageFont.truetype(font='arial.ttf', size=font_size, encoding='unic')
+                w, h = get_sizes(draw, text_single, font)
+                font_size-=1
+            draw.text((startx+int(x/2)-int(w/2),starty+y+y_text_indent-int(h/2)), text_single, font=font, fill=(255,255,255,255))
+        else:
+            font_size = small_text_size
+            image=image=Image.new('RGBA',(x,y+y_text_add),(0,0,0))
+            image.paste(image2, (0, 0), image2)
+            draw = ImageDraw.Draw(image)
+            font = ImageFont.truetype(font='arial.ttf', size=font_size, encoding='unic')
+            w, h = get_sizes(draw, text_single, font)
+            while w > res:
+                font = ImageFont.truetype(font='arial.ttf', size=font_size, encoding='unic')
+                w, h = get_sizes(draw, text_single, font)
+                font_size -= 1
+            draw.text((int(x/2)-int(w/2),y-int(h/2)), text_single, font=font, fill=(255,255,255,255))
+
+
+        init_pic=False
         # image.show()
         # file_name=file_name[:-4]+'_done.png'
-        image.save(file_name_end,'PNG')
-    return file_name_end
+        image.save(filename_end,'PNG')
+    return filename_end
+
+make_picture("some text big\nsome text small\nsome text small\n\nnext_text",'1.jpg')

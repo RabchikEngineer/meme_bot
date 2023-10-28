@@ -41,7 +41,6 @@ async def bot():
         # print('We have logged in as',(await tgclient.get_me()).username)
         logger.success('We have logged in as {username}',username=(await tgclient.get_me()).username)
 
-
         @tgclient.on(events.NewMessage(pattern='/start'))
         async def handler(event):
             await event.respond('Этот бот делает мемасики, отправь ему фотку с подписью')
@@ -58,14 +57,14 @@ async def bot():
                     time_now = time.time()
                     file_extension=get_file_extension(event.message.file.mime_type)
                     if file_extension:
+                        logger.log("PIC",f'{sender.get("username")} {sender.get("first_name")} {sender.get("last_name")} --- '+
+                                   (message.message.replace("\n", " ⮓ ").replace("\n\n", " ⮓⮓ ") if message.message!="" else "<Nothing>"))
                         filename = f'pictures/' \
                                    f'{sender.get("username")} {sender.get("first_name")} {sender.get("last_name")} ' \
                                    f'{time.strftime("%d-%m-%Y-%H-%M-%S", time.localtime(time_now))}{file_extension}'
                         # await tgclient.download_media(event.message.media, file=filename)
                         await message.download_media(filename)
                         final_file = make_picture(message.message, filename)
-                        logger.log("PIC",f'{sender.get("username")} {sender.get("first_name")} {sender.get("last_name")} --- '+
-                                         (message.message.replace("\n", " ⮓ ") if message.message!="" else "<Nothing>"))
                         await event.respond('Держи :)')
                         await tgclient.send_file(sender_id, final_file)
                         # await choise_list(event)
