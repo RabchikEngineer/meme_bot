@@ -1,6 +1,7 @@
 
 videos
 pictures
+.idea/*
 !videos/starring/0.png
 !videos/starring/music.mp3
 commands.log

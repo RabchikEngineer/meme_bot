@@ -64,7 +64,7 @@ async def bot():
                 file_extension=get_file_extension(event.message.file.mime_type)
                 if file_extension:
                     logger.log("PIC",f'{sender.get("username")} {sender.get("first_name")} {sender.get("last_name")} --- '+
-                               (message.message.replace("\n", " ⮓ ").replace("\n\n", " ⮓⮓ ") if message.message!="" else "<Nothing>"))
+                               (message.message.replace("\n\n", " ⮓⮓ ").replace("\n", " ⮓ ") if message.message!="" else "<Nothing>"))
                     filename = f'pictures/' \
                                f'{sender.get("username")} {sender.get("first_name")} {sender.get("last_name")} ' \
                                f'{time.strftime("%d-%m-%Y-%H-%M-%S", time.localtime(time_now))}{file_extension}'
