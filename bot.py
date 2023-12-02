@@ -37,12 +37,12 @@ def get_file_extension(mime_type):
 
 
 async def bot():
-    async with TelegramClient('bot', conf['app_id'], conf['app_hash']) as tgclient:
-        await tgclient.start()
-        # print('We have logged in as',(await tgclient.get_me()).username)
-        logger.success('We have logged in as {username}',username=(await tgclient.get_me()).username)
+    async with TelegramClient('bot', conf['app_id'], conf['app_hash']) as client:
+        await client.start()
+        # print('We have logged in as',(await client.get_me()).username)
+        logger.success('We have logged in as {username}',username=(await client.get_me()).username)
 
-        @tgclient.on(events.NewMessage(pattern='/'))
+        @client.on(events.NewMessage(pattern='/'))
         async def handler(event):
             sender = (await event.get_sender()).to_dict()
             ans=conf["answers"].get(event.message.message[1:])
@@ -52,7 +52,7 @@ async def bot():
                        event.message.message)
             await event.respond(ans)
 
-        @tgclient.on(events.NewMessage(pattern='^(?!\/)'))
+        @client.on(events.NewMessage(pattern='^(?!\/)'))
         async def handler(event):
             message=event.message
             sender = (await event.get_sender()).to_dict()
@@ -68,11 +68,11 @@ async def bot():
                     filename = f'pictures/' \
                                f'{sender.get("username")} {sender.get("first_name")} {sender.get("last_name")} ' \
                                f'{time.strftime("%d-%m-%Y-%H-%M-%S", time.localtime(time_now))}{file_extension}'
-                    # await tgclient.download_media(event.message.media, file=filename)
+                    # await client.download_media(event.message.media, file=filename)
                     await message.download_media(filename)
                     final_file = make_picture(message.message, filename)
                     await event.respond(conf["answers"]["done"]+(conf["answers"]["reminder"] if not message.message else ""))
-                    await tgclient.send_file(sender_id, final_file)
+                    await client.send_file(sender_id, final_file)
                     # await choise_list(event)
                 else:
                     await event.respond(conf["answers"]["filetype_error"])
@@ -82,12 +82,16 @@ async def bot():
                            message.message)
                 await event.respond(conf["answers"]["no_text_message"]+conf["answers"]["reminder"])
 
-        await tgclient.run_until_disconnected()
+        await client.run_until_disconnected()
 
 
 # User(id=1124695321, is_self=False, contact=False, mutual_contact=False, deleted=False, bot=False, bot_chat_history=False, bot_nochats=False, verified=False, restricted=False, min=False, bot_inline_geo=False, support=False, scam=False, apply_min_photo=True, fake=False, access_hash=-1546900081710505395, first_name='Валерий', last_name='Рябченко', username='rabchik_engineer', phone=None, photo=UserProfilePhoto(photo_id=5397880207618193497, dc_id=2, has_video=False, stripped_thumb=None), status=UserStatusRecently(), bot_info_version=None, restriction_reason=[], bot_inline_placeholder=None, lang_code='ru')
 
-try:
-    asyncio.run(bot())
-except KeyboardInterrupt:
-    print('Остановка программы...')
+while True:
+    try:
+        asyncio.run(bot())
+    except KeyboardInterrupt:
+        print('Остановка программы...')
+        break
+    except ConnectionError:
+        logger.error('Connection error')
