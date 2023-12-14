@@ -19,6 +19,7 @@ small_text_size = int(res * sizes['small_text_size'] / 300)
 rect_indent = int(res * sizes['rect_indent'] / 300)
 rect_width = int(res * sizes['rect_width'] / 300)
 
+font_filename="fonts/"+conf["font"]
 
 if not hasattr(Image, 'Resampling'):  # Pillow<9.0
     Image.Resampling = Image
@@ -32,7 +33,7 @@ def get_sizes(draw,text,font):
 
 
 def get_font(size):
-    return ImageFont.truetype(font='arial.ttf', size=size, encoding='unic')
+    return ImageFont.truetype(font=font_filename, size=size, encoding='unic')
 
 
 def make_picture(text, filename):
