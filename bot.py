@@ -4,15 +4,16 @@
 import json
 import time
 import asyncio
-import os, sys
+import os, sys, importlib
 
 from loguru import logger
 from telethon import TelegramClient, events
-from square_memes_script import make_picture
+from square_memes_script import PicMaker
 from video_script import create_video
 
 # Variables
 config_path = 'config.json'
+picmakers={}
 
 # Read config
 with open(config_path, encoding='utf-8') as f:
@@ -25,6 +26,14 @@ logger.level("COM", no=11, color="<yellow>", icon="C")
 logger.remove()
 logger.add(conf["log_filename"], level=2, format=log_format)
 logger.add(sys.stdout, level=2, format=log_format)
+
+def load_picmakers():
+    global picmakers
+    picmakers = {"main":PicMaker()}
+    # for user in users:
+    #     picmakers.update({user.id,PicMaker(user.conf)})
+
+load_picmakers()
 
 def get_file_extension(mime_type):
     extension=None
@@ -45,8 +54,12 @@ async def bot():
         @client.on(events.NewMessage(pattern='/'))
         async def handler(event):
             sender = (await event.get_sender()).to_dict()
-            ans=conf["answers"].get(event.message.message[1:])
-            if not ans:
+            ans=conf["answers"].get(event.message.message[1:],conf["answers"]["default"])
+            act=conf["actions"].get(event.message.message[1:],"")
+            if act:
+                if act=="0":
+                    load_picmakers()
+            if not (ans or act):
                 ans=conf["answers"]["wrong_command"]+conf["answers"]["reminder"]
             logger.log("COM", f'{sender.get("username")} {sender.get("first_name")} {sender.get("last_name")} --- ' +
                        event.message.message)
@@ -70,7 +83,7 @@ async def bot():
                                f'{time.strftime("%d-%m-%Y-%H-%M-%S", time.localtime(time_now))}{file_extension}'
                     # await client.download_media(event.message.media, file=filename)
                     await message.download_media(filename)
-                    final_file = make_picture(message.message, filename)
+                    final_file = picmakers["main"].make_picture(message.message, filename)
                     await event.respond(conf["answers"]["done"]+(conf["answers"]["reminder"] if not message.message else ""))
                     await client.send_file(sender_id, final_file)
                     # await choise_list(event)
