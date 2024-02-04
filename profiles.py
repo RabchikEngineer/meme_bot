@@ -45,7 +45,7 @@ class User:
 
     def _load_config(self):
         filename=pic_configs_dir + str(self.id)
-        with open(filename if os.path.exists(filename) else pic_configs_dir + "0",encoding='utf-8') as f:
+        with open(filename if os.path.exists(filename) else "default_user_config.json",encoding='utf-8') as f:
             return json.load(f), os.path.exists(filename)
 
     def _create_picmaker(self):
