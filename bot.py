@@ -175,6 +175,7 @@ async def bot():
                                    f'{sender.get("username")} {sender.get("first_name")} {sender.get("last_name")} ' \
                                    f'{time.strftime("%d-%m-%Y-%H-%M-%S", time.localtime(time.time()))}'
                         # filename = await message.download_media(filename, progress_callback=progress_callback)
+                        await event.respond(conf["answers"]["wait_long"])
                         filename = await message.download_media(filename)
                         final_filename=user.gifmaker.make_gif(filename)
                         await event.respond(conf["answers"]["done"])
