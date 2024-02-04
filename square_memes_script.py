@@ -1,18 +1,23 @@
 from PIL import Image,ImageDraw,ImageFont
+from auxiliary import config_path
 import json
+import auxiliary as aux
+
+with open(config_path, 'r', encoding='utf-8') as f:
+    conf = json.load(f)
+
+fonts_dir=conf['directories']['fonts']
+
 
 if not hasattr(Image, 'Resampling'):  # Pillow<9.0
     Image.Resampling = Image
 
-class PicMaker():
 
+class PicMaker:
 
-    def __init__(self, config_path = 'config.json'):
+    def __init__(self, config):
 
-        with open(config_path, 'r') as f:
-            conf = json.load(f)
-
-        sizes=conf['sizes']
+        sizes = config['sizes']
         res = sizes['resolution']
         self.res=res
         self.x_full_add = int(res * sizes['x_full_add'] / 300)
@@ -26,8 +31,7 @@ class PicMaker():
         self.rect_indent = int(res * sizes['rect_indent'] / 300)
         self.rect_width = int(res * sizes['rect_width'] / 300)
 
-        self.font_filename="fonts/"+conf["font"]
-
+        self.font_filename=fonts_dir+config["font"]
 
     def _get_sizes(self,draw,text,font):
         x0,y0,x1,y1=draw.textbbox((0, 0), text, font=font)
@@ -35,10 +39,8 @@ class PicMaker():
         h=y1-y0
         return w,h
 
-
     def _get_font(self,size):
         return ImageFont.truetype(font=self.font_filename, size=size, encoding='unic')
-
 
     def make_picture(self, text, filename):
         # levels_num=text.count('\n\n')
