@@ -6,7 +6,7 @@ import auxiliary as aux
 with open(config_path, 'r', encoding='utf-8') as f:
     conf = json.load(f)
 
-exec_ext=".bat" if platform.system() == "Windows" else ".sh"
+exec_file="togif.bat" if platform.system() == "Windows" else "./togif.sh"
 
 class GifMaker:
 
@@ -15,7 +15,7 @@ class GifMaker:
 
     def make_gif(self,filename):
         end_filename = ''.join(filename.split('.')[:-1])+".gif"
-        proc = Popen(['togif'+exec_ext, filename, end_filename], stdout=PIPE, stderr=PIPE, stdin=PIPE,shell=True)
+        proc = Popen([exec_file, filename, end_filename], stdout=PIPE, stderr=PIPE, stdin=PIPE,shell=False)
         if platform.system() == 'Windows':
             proc.wait(5)
             print([x.decode("cp1125",errors='ignore') for x in proc.communicate()])
