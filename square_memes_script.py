@@ -15,6 +15,8 @@ if not hasattr(Image, 'Resampling'):  # Pillow<9.0
 
 class PicMaker:
 
+    saved_filename=None
+
     def __init__(self, config):
 
         sizes = config['sizes']
@@ -42,16 +44,19 @@ class PicMaker:
     def _get_font(self,size):
         return ImageFont.truetype(font=self.font_filename, size=size, encoding='unic')
 
+    def set_filename(self,filename):
+        self.saved_filename = filename
+
     def make_picture(self, text, filename):
         # levels_num=text.count('\n\n')
+        if not filename: filename = self.saved_filename
         text_list=[a.split('\n') for a in text.split('\n\n')]
         text_list_extended=[]
         _=[[text_list_extended.append((a[i],"full" if i==0 else "text")) for i in range(len(a))] for a in text_list]
         filename_end = filename[:-4] + '_done.png'
         init_pic=True
         for text_single, mode in text_list_extended:
-            # if text_single.find("\n"):
-            #     text_small="".join(text_single.split(sep='\n')[1:])
+
             if init_pic:
                 image2 = Image.open(filename).convert('RGBA')
             else:
@@ -89,10 +94,8 @@ class PicMaker:
                     font_size -= 1
                 draw.text((int(x/2)-int(w/2),y-int(h/2)), text_single, font=font, fill=(255,255,255,255))
 
-
             init_pic=False
-            # image.show()
-            # file_name=file_name[:-4]+'_done.png'
+
             image.save(filename_end,'PNG')
         return filename_end
 

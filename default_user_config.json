@@ -20,5 +20,9 @@
       "rect_indent": 5,
       "rect_width": 2
     }
+  },
+  "gif": {
+    "resolution": 320,
+    "fps": 15
   }
 }

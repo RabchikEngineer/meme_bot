@@ -11,8 +11,9 @@ from telethon import TelegramClient, events, Button
 # from square_memes_script import PicMaker
 from profiles import User,UserDict
 from video_script import create_video
-from auxiliary import config_path
+from auxiliary import config_path, MimeChecker, get_sender_names
 import auxiliary as aux
+from controller import MainController
 
 # Variables
 user_modes=['pic','gif']
@@ -24,86 +25,88 @@ with open(config_path, encoding='utf-8') as f:
 
 
 users=UserDict()
-users_ids=[int(x) for x in os.listdir(conf['directories']['pic_configs'])]
+users_ids=[int(x) for x in os.listdir(conf['directories']['users_configs']) if os.path.isfile(x)]
 fonts=os.listdir(conf["directories"]["fonts"])
+to_settings=[[Button.inline("Назад", "m/settings")]]
 
 log_format='<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | {message}'
 logger.level("TEXT", no=7, color="<blue>", icon="T")
 logger.level("PIC", no=8, color="<cyan>", icon="P")
+logger.level("GIF", no=8, color="<cyan>", icon="G")
+logger.level("INL", no=10, color="<yellow>", icon="I")
 logger.level("COM", no=11, color="<yellow>", icon="C")
-logger.level("INL", no=11, color="<yellow>", icon="I")
 logger.remove()
 logger.add(conf["log_filename"], level=2, format=log_format)
 logger.add(sys.stdout, level=2, format=log_format)
 
 
-def get_file_extension(mime_type):
-    extension=None
-    type_list=mime_type.split('/') # image/jpeg image/webp video/mp4 application/x-tgsticker
-    if type_list[0]=='image':
-        extension='.jpg'
-    if type_list[0]=='video':
-        extension='.mp4'
-    return extension
-
-
-def get_sender_names(sender):
-    return f'{sender.get("username")} {sender.get("first_name")} {sender.get("last_name")} --- '
-
+def event_filter(event):
+    return event.is_private
 
 def buttons_from_dict(dct):
-    return [Button.inline(text,data) for text,data in dct.items()]
+    return [[Button.inline(text,data)] for text,data in dct.items()]
 
 
 def progress_callback(current, total):
     print('Downloaded', current, 'out of', total,
           'bytes: {:.2%}'.format(current / total))
 
+async def settings_page(msg,user,text=''):
+    await msg.edit(conf["answers"]["settings"] + user.get_stats() + text, buttons=
+    buttons_from_dict(conf["buttons"]["settings"]))
 
+
+MainController.set_logger(logger)
 users.load(users_ids)
 
 
 async def bot():
-    async with TelegramClient('bot', conf['app_id'], conf['app_hash']) as client:
+    async with TelegramClient(conf['session_name'], conf['app_id'], conf['app_hash']) as client:
         await client.start()
         # print('We have logged in as',(await client.get_me()).username)
+        MainController.set_client(client)
         logger.success('We have logged in as {username}',username=(await client.get_me()).username)
 
-        @client.on(events.NewMessage(pattern='/'))
+        @client.on(events.NewMessage(pattern='/',func=event_filter))
         async def handler(event):
             sender = (await event.get_sender()).to_dict()
 
             user = users.get_or_create(sender)
-            # if not user:
-            #     user = User(sender['id'])
-            #     users.update({user.id:user})
 
             ans=conf["answers"].get(event.message.message[1:],"")
             act=conf["actions"].get(event.message.message[1:],"")
             buttons=None
+            file=None
             if act:
                 if act=="0":
                     users.load(users_ids)
-                if act=="1":
-                    user.reload()
-                if act=="2":
+                elif act=="1":
+                    user.reload(from_config=True)
+                elif act=="2":
                     ans+=user.get_stats()
                     buttons=buttons_from_dict(conf["buttons"]["settings"])
                 # await client.send_message(sender['id'],"some text",)
-                if act=="3":
+                elif act=="3":
                     users.save()
-                if act=="4":
+                elif act=="4":
                     user.save()
-                if act=="5":
-                    buttons=[[Button.text("/settings"),Button.text("/example")],
-                             [Button.text("/start"),Button.text("А не придумал")]]
+                elif act=="5":
+                    buttons=[[Button.text("/example"),Button.text("/settings")],
+                             [Button.text("/start"),Button.text("/clear_buttons")]]
+                elif act=="6":
+                    # print(dir(event))
+                    # print(dir(client))
+                    file=await client.upload_file(conf['example_file'])
+                    # event.reply(client.File())
+                elif act=="7":
+                    buttons=Button.clear()
             if act and not ans:
                 ans = conf["answers"]["default"]
             if not (ans or act):
                 ans=conf["answers"]["wrong_command"]+conf["answers"]["reminder"]
             logger.log("COM", f'{sender.get("username")} {sender.get("first_name")} {sender.get("last_name")} --- ' +
                        event.message.message)
-            await event.respond(ans,buttons=buttons)
+            await event.respond(ans,buttons=buttons,file=file)
 
 
         @client.on(events.CallbackQuery)
@@ -116,76 +119,92 @@ async def bot():
             # print(event.data)
             if com[0]=='m':
                 if com[1]=='settings':
-                    await msg.edit(conf["answers"]["settings"]+user.get_stats(), buttons=
-                                   buttons_from_dict(conf["buttons"]["settings"]))
+                    await settings_page(msg,user)
             elif com[0]=='ch':
+
                 if com[1]=='mode':
                     user.mode=user_modes[user_modes.index(user.mode)+1 if user_modes.index(user.mode)<len(user_modes)-1 else 0]
-                    await msg.edit(conf["answers"]["settings"] + user.get_stats(), buttons=
-                                   buttons_from_dict(conf["buttons"]["settings"]))
+                    await settings_page(msg, user)
                     await event.answer('Режим изменён на '+user.mode)
-                if com[1]=='font':
+
+                elif com[1]=='font':
                     await msg.edit("Выберите шрифт:",buttons=
-                        [[Button.inline(text,"f/"+str(data))] for data,text in enumerate(fonts)]+
-                        [[Button.inline("Назад", "m/settings")]])
-            elif com[0]=='f':
+                        [[Button.inline(text[:-4],"font/"+str(num))] for num,text in enumerate(fonts)]+to_settings)
+
+                elif com[1]=='pic_res':
+                    await msg.edit("Выберите горизонтальное разрешение картинок в пикселях:", buttons=
+                    [[Button.inline(str(res), "pic_res/" + str(res))] for res in conf['allowed_resolutions']['pic']]+
+                        to_settings)
+
+                elif com[1]=='gif_res':
+                    await msg.edit("Выберите горизонтальное разрешение гифок в пикселях:", buttons=
+                    [[Button.inline(str(res), "gif_res/" + str(res))] for res in conf['allowed_resolutions']['gif']]+
+                        to_settings)
+
+                elif com[1]=='gif_fps':
+                    await msg.edit("Выберите FPS гифок:", buttons=
+                    [[Button.inline(str(res), "gif_fps/" + str(res))] for res in conf['allowed_fps']] +
+                        to_settings)
+
+                elif com[1]=='reset':
+                    user.reload(from_config=True,default_config=True)
+                    await settings_page(msg, user)
+                    await event.answer("Все настройки успешно сброшены:)")
+
+            elif com[0]=='font':
                 font = fonts[int(com[1])]
                 user.set_font(font)
-                await event.answer("Шрифт изменён на "+font)
+                await event.answer("Шрифт изменён на "+font[:-4])
 
-            logger.log("INL",get_sender_names(sender)+data)
+            elif com[0]=='pic_res':
+                user.set_pic_res(int(com[1]))
+                await event.answer("Разрешение картинок изменено на " + com[1])
+
+            elif com[0]=='gif_res':
+                user.set_gif_res(int(com[1]))
+                await event.answer("Разрешение гифок изменено на " + com[1])
+
+            elif com[0]=='gif_fps':
+                user.set_gif_fps(int(com[1]))
+                await event.answer("FPS гифок изменён на " + com[1])
+
+            logger.log("INL",get_sender_names(sender)+f' --- {data}')
             await event.answer()
 
-        @client.on(events.NewMessage(pattern=r'^(?!\/)'))
+        @client.on(events.NewMessage(pattern=r'^(?!\/)',func=event_filter))
         async def handler(event):
-            message=event.message
-            sender = (await event.get_sender()).to_dict()
-            user = users.get_or_create(sender)
+            ctrl = await MainController.create(event)
 
-            if user.state=="idle":
+            if ctrl.user.state == "idle":
 
-                if message.media:
+                if ctrl.message.media:
 
-                    if user.mode == "pic":
 
-                        await event.respond(conf["answers"]["wait"])
-                        # print(event.message)
-                        sender_id = sender['id']
-                        time_now = time.time()
-                        file_extension=get_file_extension(event.message.file.mime_type)
-                        if file_extension:
-                            logger.log("PIC",get_sender_names(sender)+
-                                       (message.message.replace("\n\n", " ⮓⮓ ").replace("\n", " ⮓ ") if message.message!="" else "<Nothing>"))
-                            filename = f'{conf["directories"]["pictures"]}' \
-                                       f'{sender.get("username")} {sender.get("first_name")} {sender.get("last_name")} ' \
-                                       f'{time.strftime("%d-%m-%Y-%H-%M-%S", time.localtime(time_now))}{file_extension}'
-                            # await client.download_media(event.message.media, file=filename)
-                            await message.download_media(filename)
-                            final_filename = user.picmaker.make_picture(message.message, filename)
-                            await event.respond(conf["answers"]["done"]+(conf["answers"]["reminder"] if not message.message else ""))
-                            await client.send_file(sender_id, final_filename)
-                        else:
-                            await event.respond(conf["answers"]["filetype_error"])
+                    if ctrl.user.mode == "pic" and MimeChecker.is_image(ctrl.message.file):
 
-                    elif user.mode == "gif":
+                        await ctrl.pic_sequence()
 
-                        # filename = f'{conf["directories"]["gif"]}' \
-                        #            f'{sender["id"]}'
-                        filename = f'{conf["directories"]["gif"]}' \
-                                   f'{sender.get("username")} {sender.get("first_name")} {sender.get("last_name")} ' \
-                                   f'{time.strftime("%d-%m-%Y-%H-%M-%S", time.localtime(time.time()))}'
-                        # filename = await message.download_media(filename, progress_callback=progress_callback)
-                        await event.respond(conf["answers"]["wait_long"])
-                        filename = await message.download_media(filename)
-                        final_filename=user.gifmaker.make_gif(filename)
-                        await event.respond(conf["answers"]["done"])
-                        await client.send_file(sender['id'], final_filename)
+                    elif ctrl.user.mode == "gif" and MimeChecker.is_video(ctrl.message.file):
+
+                        await ctrl.gif_sequence()
+
+                    else:
+                        await event.respond(conf["answers"]["filetype_error"])
+
+                    # ctrl.user.state('idle')
 
                 else:
-                    logger.log("TEXT", get_sender_names(sender)+
-                               message.message)
-                    await event.respond(conf["answers"]["no_text_message"]+conf["answers"]["reminder"])
-            # elif user.state=="ch_font":
+                    logger.log("TEXT", get_sender_names(ctrl.sender)+f' --- {ctrl.message.message}')
+                    await event.respond(conf["answers"]["no_image_message"]+conf["answers"]["reminder"])
+
+            elif ctrl.user.state=="waiting_for_text":
+
+                if ctrl.message.message:
+                    await ctrl.pic_sequence()
+                    ctrl.user.state.set('idle')
+
+                else:
+                    await ctrl.event.respond(conf["answers"]["text_request"])
 
         await client.run_until_disconnected()
 
@@ -201,8 +220,9 @@ while True:
     try:
         asyncio.run(bot())
     except KeyboardInterrupt:
-        print('Остановка программы...')
+        print('Сохранение пользователей...')
         users.save()
+        print('Остановка программы...')
         break
     except ConnectionError:
         logger.error('Connection error')
