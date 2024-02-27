@@ -17,7 +17,7 @@ def create_dirs(paths):
 
 
 def get_sender_names(sender):
-    return ' '.join([sender.get("username"), sender.get("first_name"), sender.get("last_name")])
+    return f'{sender.get("username")} {sender.get("first_name")} {sender.get("last_name")}'
 
 
 class MimeChecker:
