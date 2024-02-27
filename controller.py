@@ -15,7 +15,7 @@ with open(config_path, encoding='utf-8') as f:
 
 class MainController:
 
-    users = UserDict()
+    users = None
     client = None
     logger = None
 
@@ -39,6 +39,10 @@ class MainController:
     @classmethod
     def set_logger(cls,logger):
         cls.logger = logger
+
+    @classmethod
+    def set_users(cls,users):
+        cls.users = users
 
     async def pic_sequence(self):
         # file_extension=MimeChecker.get_file_extension(self.event.self.message.file)

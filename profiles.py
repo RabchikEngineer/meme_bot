@@ -24,7 +24,7 @@ class User:
 
     def reload(self,from_config=False, default_config=False):
         if from_config:
-            self.config, _ = self._load_config(default_config)
+            self.config, _ = self._load_config(default=default_config)
             self.mode = self.config['mode']
         self.picmaker = self._create_picmaker()
         self.gifmaker = self._create_gifmaker()

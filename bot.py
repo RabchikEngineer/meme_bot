@@ -30,14 +30,14 @@ fonts=os.listdir(conf["directories"]["fonts"])
 to_settings=[[Button.inline("Назад", "m/settings")]]
 
 log_format='<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | {message}'
-logger.level("TEXT", no=7, color="<blue>", icon="T")
-logger.level("PIC", no=8, color="<cyan>", icon="P")
-logger.level("GIF", no=8, color="<cyan>", icon="G")
-logger.level("INL", no=10, color="<yellow>", icon="I")
-logger.level("COM", no=11, color="<yellow>", icon="C")
+logger.level("TEXT", no=22, color="<blue>", icon="T")
+logger.level("PIC", no=22, color="<cyan>", icon="P")
+logger.level("GIF", no=22, color="<cyan>", icon="G")
+logger.level("INL", no=22, color="<yellow>", icon="I")
+logger.level("COM", no=22, color="<yellow>", icon="C")
 logger.remove()
 logger.add(conf["log_filename"], level=2, format=log_format)
-logger.add(sys.stdout, level=2, format=log_format)
+logger.add(sys.stdout, level=10, format=log_format)
 
 
 def event_filter(event):
@@ -57,6 +57,7 @@ async def settings_page(msg,user,text=''):
 
 
 MainController.set_logger(logger)
+MainController.set_users(users)
 users.load(users_ids)
 
 
@@ -69,8 +70,9 @@ async def bot():
 
         @client.on(events.NewMessage(pattern='/',func=event_filter))
         async def handler(event):
-            sender = (await event.get_sender()).to_dict()
+            logger.trace(f'Command request')
 
+            sender = (await event.get_sender()).to_dict()
             user = users.get_or_create(sender)
 
             ans=conf["answers"].get(event.message.message[1:],"")
@@ -104,13 +106,14 @@ async def bot():
                 ans = conf["answers"]["default"]
             if not (ans or act):
                 ans=conf["answers"]["wrong_command"]+conf["answers"]["reminder"]
-            logger.log("COM", f'{sender.get("username")} {sender.get("first_name")} {sender.get("last_name")} --- ' +
+            logger.log("COM", f'{get_sender_names(sender)} --- ' +
                        event.message.message)
             await event.respond(ans,buttons=buttons,file=file)
 
 
         @client.on(events.CallbackQuery)
         async def callback(event):
+            logger.trace(f'Inline request')
             sender = (await event.get_sender()).to_dict()
             user = users.get_or_create(sender)
             data=event.data.decode()
@@ -168,11 +171,12 @@ async def bot():
                 user.set_gif_fps(int(com[1]))
                 await event.answer("FPS гифок изменён на " + com[1])
 
-            logger.log("INL",get_sender_names(sender)+f' --- {data}')
+            logger.log("INL",get_sender_names(sender)+f' --- {com[0]:8} /  {com[1]:10}')
             await event.answer()
 
         @client.on(events.NewMessage(pattern=r'^(?!\/)',func=event_filter))
         async def handler(event):
+            logger.trace(f'Non-command request')
             ctrl = await MainController.create(event)
 
             if ctrl.user.state == "idle":
