@@ -1,4 +1,4 @@
-import pathlib,json
+import pathlib,json,os
 
 #variables
 config_path = 'config.json'
@@ -14,6 +14,10 @@ def create_dir(path):
 def create_dirs(paths):
     for path in paths:
         create_dir(path)
+
+
+def pretty_file_size(filename):
+    return round(os.path.getsize(filename)/1024**2,2)
 
 
 def get_sender_names(sender):

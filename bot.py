@@ -13,35 +13,13 @@ from profiles import User,UserDict
 from video_script import create_video
 from auxiliary import config_path, MimeChecker, get_sender_names
 import auxiliary as aux
-from controller import MainController
-
-# Variables
-user_modes=['pic','gif']
-
-# Read config
-with open(config_path, encoding='utf-8') as f:
-    conf = json.load(f)
-
-
-
-users=UserDict()
-users_ids=[int(x) for x in os.listdir(conf['directories']['users_configs']) if os.path.isfile(x)]
-fonts=os.listdir(conf["directories"]["fonts"])
-to_settings=[[Button.inline("Назад", "m/settings")]]
-
-log_format='<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | {message}'
-logger.level("TEXT", no=22, color="<blue>", icon="T")
-logger.level("PIC", no=22, color="<cyan>", icon="P")
-logger.level("GIF", no=22, color="<cyan>", icon="G")
-logger.level("INL", no=22, color="<yellow>", icon="I")
-logger.level("COM", no=22, color="<yellow>", icon="C")
-logger.remove()
-logger.add(conf["log_filename"], level=2, format=log_format)
-logger.add(sys.stdout, level=10, format=log_format)
+from controller import MainController, gif_watchdog
+import multiprocessing as mp
 
 
 def event_filter(event):
     return event.is_private
+
 
 def buttons_from_dict(dct):
     return [[Button.inline(text,data)] for text,data in dct.items()]
@@ -51,14 +29,10 @@ def progress_callback(current, total):
     print('Downloaded', current, 'out of', total,
           'bytes: {:.2%}'.format(current / total))
 
+
 async def settings_page(msg,user,text=''):
     await msg.edit(conf["answers"]["settings"] + user.get_stats() + text, buttons=
-    buttons_from_dict(conf["buttons"]["settings"]))
-
-
-MainController.set_logger(logger)
-MainController.set_users(users)
-users.load(users_ids)
+                   buttons_from_dict(conf["buttons"]["settings"]))
 
 
 async def bot():
@@ -109,7 +83,6 @@ async def bot():
             logger.log("COM", f'{get_sender_names(sender)} --- ' +
                        event.message.message)
             await event.respond(ans,buttons=buttons,file=file)
-
 
         @client.on(events.CallbackQuery)
         async def callback(event):
@@ -213,6 +186,54 @@ async def bot():
         await client.run_until_disconnected()
 
 
+if __name__=='__main__':
+    # Variables
+    user_modes = ['pic', 'gif']
+
+    # Read config
+    with open(config_path, encoding='utf-8') as f:
+        conf = json.load(f)
+
+    users = UserDict()
+    gif_queue = mp.Queue()
+    users_ids = [int(x) for x in os.listdir(conf['directories']['users_configs']) if os.path.isfile(x)]
+    fonts = os.listdir(conf["directories"]["fonts"])
+    to_settings = [[Button.inline("Назад", "m/settings")]]
+
+    log_format = '<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | {message}'
+    logger.level("TEXT", no=22, color="<blue>", icon="T")
+    logger.level("PIC", no=22, color="<cyan>", icon="P")
+    logger.level("GIF", no=22, color="<cyan>", icon="G")
+    logger.level("INL", no=22, color="<yellow>", icon="I")
+    logger.level("COM", no=22, color="<yellow>", icon="C")
+    logger.remove()
+    logger.add(conf["log_filename"], level=2, format=log_format)
+    logger.add(sys.stdout, level=10, format=log_format)
+
+    MainController.set_logger(logger)
+    MainController.set_users(users)
+    MainController.set_queue(gif_queue)
+    users.load(users_ids)
+    print('out1',MainController.queue)
+    # MainController.queue.put('something1')
+    # MainController.queue.put('stop')
+    gif_watchdog=mp.Process(target=gif_watchdog,args=(MainController,MainController.queue))
+    gif_watchdog.start()
+    print('out2',MainController.queue)
+
+    while True:
+        try:
+            asyncio.run(bot())
+        except KeyboardInterrupt:
+            print('Сохранение пользователей...')
+            users.save()
+            print('Остановка программы...')
+            MainController.queue.put('stop')
+            print('Goodbye:)')
+            break
+        except ConnectionError:
+            logger.error('Connection error')
+
 # User(id=1124695321, is_self=False, contact=False, mutual_contact=False, deleted=False, bot=False, bot_chat_history=False,
 # bot_nochats=False, verified=False, restricted=False, min=False, bot_inline_geo=False, support=False, scam=False,
 # apply_min_photo=True, fake=False, access_hash=-1546900081710505395,
@@ -220,13 +241,4 @@ async def bot():
 # dc_id=2, has_video=False, stripped_thumb=None), status=UserStatusRecently(), bot_info_version=None, restriction_reason=[],
 # bot_inline_placeholder=None, lang_code='ru')
 
-while True:
-    try:
-        asyncio.run(bot())
-    except KeyboardInterrupt:
-        print('Сохранение пользователей...')
-        users.save()
-        print('Остановка программы...')
-        break
-    except ConnectionError:
-        logger.error('Connection error')
+
