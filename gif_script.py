@@ -19,7 +19,7 @@ class GifMaker:
         end_filename = ''.join(filename.split('.')[:-1])+".gif"
         proc = Popen([exec_file, filename, end_filename,str(self.resolution),str(self.fps)], stdout=PIPE, stderr=PIPE, stdin=PIPE,shell=False)
         if platform.system() == 'Windows':
-            proc.wait(5)
+            proc.wait(10)
             print([x.decode("cp1125",errors='ignore') for x in proc.communicate()])
             queue.put([ctrl, filename, 200])
             return
