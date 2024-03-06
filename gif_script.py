@@ -21,8 +21,8 @@ class GifMaker:
     def make_gif(self, ctrl, queue, filename):
         end_filename = ''.join(filename.split('.')[:-1])+".gif"
         print(end_filename)
-        temp_dir = conf["directories"]["gif"]
-        temp_filename = f'{threading.get_native_id()}.gif'
+        temp_dir = conf["directories"]["tmp"]
+        temp_filename = str(threading.get_native_id())
         proc = Popen([exec_file, filename, temp_dir, temp_filename, end_filename,str(self.resolution),str(self.fps)],
                      stdout=PIPE, stderr=PIPE, stdin=PIPE,shell=False)
         if platform.system() == 'Windows':
