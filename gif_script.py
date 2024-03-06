@@ -31,4 +31,7 @@ class GifMaker:
             return
         time1 = time.time()
         proc.wait(conf['gif_timeout'])
+        res = proc.communicate()[1]
+        if res:
+            ctrl.logger.error(res.decode('utf-8'))
         queue.put([ctrl, end_filename, time.time()-time1])
