@@ -3,6 +3,7 @@ import asyncio
 from auxiliary import config_path, get_sender_names,pretty_file_size
 import json, time
 import threading as th
+# from concurrent.futures import ThreadPoolExecutor
 
 with open(config_path, encoding='utf-8') as f:
     conf = json.load(f)
@@ -52,7 +53,7 @@ class MainController:
             res = cls.queue.get()
             cls.logger.info("Sending GIF...")
             asyncio.run_coroutine_threadsafe(cls.send_gif(*res),loop)
-            cls.logger.info("GIF sent...")
+            # cls.logger.info("GIF sent...")
             cls.queue.task_done()
 
     @classmethod
@@ -99,10 +100,13 @@ class MainController:
         # final_filename, ex_time = self.user.gifmaker.make_gif(filename)
         gif_th=th.Thread(target=self.user.gifmaker.make_gif, args=(self, self.queue, filename))
         gif_th.start()
-        # self.client.loop.create_task(self.user.gifmaker.make_gif(self, self.queue, filename))
         self.logger.log("GIF", get_sender_names(self.sender) +
                         f' --- start {self.user.gifmaker.resolution}x{self.user.gifmaker.fps}  '
                         f'{pretty_file_size(filename)}M')
+        # self.client.loop.create_task(self.user.gifmaker.make_gif(self, self.queue, filename))
+        # with ThreadPoolExecutor() as pool:
+        # final_filename, ex_time = await self.client.loop.run_in_executor(pool,self.user.gifmaker.make_gif_old)
+        # print(final_filename, ex_time)
 
 
 
