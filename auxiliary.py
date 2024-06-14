@@ -1,6 +1,9 @@
-import pathlib,json,os
+import pathlib,json,os,queue
 
 #variables
+import sys
+import threading
+
 config_path = 'config.json'
 
 with open(config_path, encoding='utf-8') as f:
@@ -54,6 +57,47 @@ class MimeChecker:
             mime_type = mime_type.mime_type
         type_list=mime_type.split('/')
         return type_list[0] in cls.video_types[0] or mime_type in cls.video_types[1]
+
+
+class Queues:
+
+    def __init__(self,names):
+        for name in names:
+            exec(f'self.{name}=None')
+
+    def set(self,name,q):
+        self.name=q
+
+
+class GifQueue:
+    req_gif=queue.Queue()
+    done_gif=queue.Queue()
+
+
+class ActiveThreads:
+    n=0
+
+    def inc(self):
+        self.n+=1
+
+    def dec(self):
+        self.n-=1
+
+    def __gt__(self, other):
+        return self.n>other
+
+    def __lt__(self, other):
+        return self.n<other
+
+    def __eq__(self, other):
+        return self.n==other
+
+
+
+class ThreadWithStop(threading.Thread):
+
+    def stop(self):
+        raise SystemExit
 
 
 

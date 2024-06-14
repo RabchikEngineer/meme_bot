@@ -10,6 +10,6 @@ test.py
 .pyc
 log.txt
 /config.json
-/log_test.py
+/test.py
 /log_test.txt
 /bot.session

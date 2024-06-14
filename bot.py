@@ -1,19 +1,17 @@
 #!/bin/python3
 
-# Libs
 import json
 import time
 import asyncio
 import queue
-import os, sys, importlib
+import os, sys
 
 from loguru import logger
 from telethon import TelegramClient, events, Button
-# from square_memes_script import PicMaker
-from profiles import User,UserDict
-from video_script import create_video
-from auxiliary import config_path, MimeChecker, get_sender_names
-import auxiliary as aux
+from profiles import UserDict
+# from video_script import create_video
+from auxiliary import config_path, MimeChecker, get_sender_names, ThreadWithStop
+# import auxiliary as aux
 from controller import MainController
 import threading as th
 
@@ -195,11 +193,9 @@ if __name__=='__main__':
     # Variables
     user_modes = ['pic', 'gif']
 
-
     # Read config
     with open(config_path, encoding='utf-8') as f:
         conf = json.load(f)
-
 
     loop = asyncio.get_event_loop()
     asyncio.set_event_loop(loop)
@@ -211,7 +207,6 @@ if __name__=='__main__':
     # client.loop.create_task(client.send_message('RabchikEngineer', 'hello'))
 
     users = UserDict()
-    gif_queue = queue.Queue()
     users_ids = [int(x) for x in os.listdir(conf['directories']['users_configs']) if os.path.isfile(x)]
     fonts = os.listdir(conf["directories"]["fonts"])
     to_settings = [[Button.inline("Назад", "m/settings")]]
@@ -228,33 +223,32 @@ if __name__=='__main__':
 
     MainController.set_logger(logger)
     MainController.set_users(users)
-    MainController.set_queue(gif_queue)
     users.load(users_ids)
 
-    gif_watchdog=th.Thread(target=MainController.gif_watchdog,args=(loop,),daemon=True)
-    gif_watchdog.start()
+    gif_send_watchdog=th.Thread(target=MainController.gif_send_watchdog,args=(loop,),daemon=True)
+    gif_send_watchdog.start()
+
+    gif_start_watchdog=th.Thread(target=MainController.gif_start_watchdog,args=(loop,),daemon=True)
+    gif_start_watchdog.start()
+
 
     try:
         # loop.create_task(MainController.gif_watchdog())
         loop.create_task(bot(client))
         loop.run_forever()
+
     except KeyboardInterrupt:
         pass
     finally:
+        print('Остановка сервисов....')
+        MainController.queues.req_gif.join()
+        MainController.queues.done_gif.join()
         print('Сохранение пользователей...')
         users.save()
         print('Остановка программы...')
-        gif_queue.join()
         loop.run_until_complete(client.send_message(conf["admin_id"], 'Bot stopped...'))
         loop.close()
         logger.success('System stopped')
         print('Goodbye:)')
-
-# User(id=1124695321, is_self=False, contact=False, mutual_contact=False, deleted=False, bot=False, bot_chat_history=False,
-# bot_nochats=False, verified=False, restricted=False, min=False, bot_inline_geo=False, support=False, scam=False,
-# apply_min_photo=True, fake=False, access_hash=-1546900081710505395,
-# first_name='Валерий', last_name='Рябченко', username='rabchik_engineer', phone=None, photo=UserProfilePhoto(photo_id=5397880207618193497,
-# dc_id=2, has_video=False, stripped_thumb=None), status=UserStatusRecently(), bot_info_version=None, restriction_reason=[],
-# bot_inline_placeholder=None, lang_code='ru')
 
 
