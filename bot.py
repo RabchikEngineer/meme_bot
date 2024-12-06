@@ -1,18 +1,17 @@
 #!/bin/python3
 
 import json
-import time
 import asyncio
-import queue
 import os, sys
+import signal
 
 from loguru import logger
 from telethon import TelegramClient, events, Button
-from profiles import UserDict
+from modules.profiles import UserDict
 # from video_script import create_video
-from auxiliary import config_path, MimeChecker, get_sender_names, ThreadWithStop
+from modules.auxiliary import config_path, MimeChecker, get_sender_names, sigterm_handler
 # import auxiliary as aux
-from controller import MainController
+from modules.controller import MainController
 import threading as th
 
 
@@ -36,8 +35,11 @@ async def settings_page(msg,user,text=''):
 
 async def bot(client):
     # await client.start()
+    await client.start()
     # print(await client.get_me())
     # print('We have logged in as',(await client.get_me()).username)
+
+
     logger.success('We have logged in as {username}',username=(await client.get_me()).username)
     await client.send_message(conf["admin_id"], 'Bot started')
 
@@ -182,11 +184,9 @@ async def bot(client):
             else:
                 await ctrl.event.respond(conf["answers"]["text_request"])
 
-    while True:
-        try:
-            await client.run_until_disconnected()
-        except ConnectionError:
-            logger.error('Connection error')
+
+
+    await client.run_until_disconnected()
 
 
 if __name__=='__main__':
@@ -197,17 +197,16 @@ if __name__=='__main__':
     with open(config_path, encoding='utf-8') as f:
         conf = json.load(f)
 
-    loop = asyncio.get_event_loop()
+    loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
-    client=TelegramClient(conf['session_name'], conf['app_id'], conf['app_hash'],loop=loop)
-    client.start()
+    client=TelegramClient(conf["directories"]["sessions"]+conf['session_name'], conf['app_id'], conf['app_hash'],loop=loop)
     MainController.set_client(client)
 
     # client.loop.create_task(client.send_message('RabchikEngineer', 'hello'))
 
     users = UserDict()
-    users_ids = [int(x) for x in os.listdir(conf['directories']['users_configs']) if os.path.isfile(x)]
+    users_ids = [int(x) for x in os.listdir(conf['directories']['user_configs']) if os.path.isfile(x)]
     fonts = os.listdir(conf["directories"]["fonts"])
     to_settings = [[Button.inline("Назад", "m/settings")]]
 
@@ -218,7 +217,7 @@ if __name__=='__main__':
     logger.level("INL", no=22, color="<yellow>", icon="I")
     logger.level("COM", no=22, color="<yellow>", icon="C")
     logger.remove()
-    logger.add(conf["log_filename"], level=2, format=log_format)
+    # logger.add(conf["log_filename"], level=2, format=log_format)
     logger.add(sys.stdout, level=10, format=log_format)
 
     MainController.set_logger(logger)
@@ -231,22 +230,33 @@ if __name__=='__main__':
     gif_start_watchdog=th.Thread(target=MainController.gif_start_watchdog,args=(loop,),daemon=True)
     gif_start_watchdog.start()
 
+    signal.signal(signal.SIGTERM, sigterm_handler)
 
     try:
         # loop.create_task(MainController.gif_watchdog())
-        loop.create_task(bot(client))
-        loop.run_forever()
+        loop.run_until_complete(asyncio.gather(bot(client)))
+        # loop.run_forever()
 
     except KeyboardInterrupt:
         pass
+    except ConnectionError:
+        logger.info('Saving users...')
+        users.save()
+        logger.success('Users saved successfully')
+        logger.error('Connection error')
     finally:
-        print('Остановка сервисов....')
+        logger.info('Waiting for modules...')
         MainController.queues.req_gif.join()
         MainController.queues.done_gif.join()
-        print('Сохранение пользователей...')
+        logger.success("Modules stop")
+        logger.info('Saving users...')
         users.save()
-        print('Остановка программы...')
-        loop.run_until_complete(client.send_message(conf["admin_id"], 'Bot stopped...'))
+        logger.success('Users saved successfully')
+        # print('Остановка программы...')
+        try:
+            loop.run_until_complete(client.send_message(conf["admin_id"], 'Bot stopped...'))
+        except ConnectionError:
+            pass
         loop.close()
         logger.success('System stopped')
         print('Goodbye:)')

@@ -44,6 +44,9 @@ class PicMaker:
     def _get_font(self,size):
         return ImageFont.truetype(font=self.font_filename, size=size, encoding='unic')
 
+
+    # def _get_appreciate_font_size(self, ):
+
     def set_filename(self,filename):
         self.saved_filename = filename
 

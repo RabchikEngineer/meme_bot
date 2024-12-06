@@ -1,11 +1,9 @@
 import subprocess
 import threading
 
-from auxiliary import config_path
+from modules.auxiliary import config_path
 from subprocess import Popen,PIPE
 import json,os,platform,time
-import auxiliary as aux
-import threading as th
 
 with open(config_path, 'r', encoding='utf-8') as f:
     conf = json.load(f)
@@ -26,6 +24,7 @@ class GifMaker:
         end_filename = ''.join(filename.split('.')[:-1])+".gif"
         temp_dir = conf["directories"]["tmp"]
         temp_filename = str(threading.get_native_id())
+        print(os.listdir())
         proc = Popen([exec_file, filename, temp_dir, temp_filename, end_filename,str(self.resolution),str(self.fps)],
                      stdout=PIPE, stderr=PIPE, stdin=PIPE,shell=False)
         time1 = time.time()

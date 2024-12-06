@@ -7,7 +7,7 @@ from gif_script import GifMaker
 with open(config_path, encoding='utf-8') as f:
     conf = json.load(f)
 
-users_configs_dir = conf['directories']['users_configs']
+users_configs_dir = conf['directories']['user_configs']
 # pic_configs_dir = conf['directories']['pic_configs']
 
 

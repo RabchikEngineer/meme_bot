@@ -1,7 +1,7 @@
-#!/bin/sh
+#!/bin/bash
 
-palette="$2/palette$3.png"
-temp_gif="$2/temp$3.gif"
+palette="$2palette$3.png"
+temp_gif="$2temp$3.gif"
 filters="fps=$6,scale=$5:-1:flags=lanczos"
 
 ffmpeg -v warning -i "$1" -vf "$filters,palettegen" -y "$palette"
