@@ -4,7 +4,7 @@ import pathlib,json,os,queue
 import sys
 import threading
 
-config_path = '../config.json'
+config_path = 'config.json'
 
 with open(config_path, encoding='utf-8') as f:
     conf = json.load(f)

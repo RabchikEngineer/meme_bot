@@ -1,7 +1,7 @@
-from auxiliary import config_path
+from modules.auxiliary import config_path
 import json, os
-from square_memes_script import PicMaker
-from gif_script import GifMaker
+from modules.square_memes_script import PicMaker
+from modules.gif_script import GifMaker
 
 
 with open(config_path, encoding='utf-8') as f:

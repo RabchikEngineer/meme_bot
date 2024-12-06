@@ -1,7 +1,6 @@
 from PIL import Image,ImageDraw,ImageFont
-from auxiliary import config_path
+from modules.auxiliary import config_path
 import json
-import auxiliary as aux
 
 with open(config_path, 'r', encoding='utf-8') as f:
     conf = json.load(f)

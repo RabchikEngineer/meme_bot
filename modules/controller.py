@@ -1,6 +1,6 @@
 import asyncio
 
-from auxiliary import config_path, get_sender_names,pretty_file_size, GifQueue,ActiveThreads
+from modules.auxiliary import config_path, get_sender_names,pretty_file_size, GifQueue,ActiveThreads
 import json, time
 import threading as th
 # from concurrent.futures import ThreadPoolExecutor
