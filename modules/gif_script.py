@@ -8,7 +8,7 @@ import json,os,platform,time
 with open(config_path, 'r', encoding='utf-8') as f:
     conf = json.load(f)
 
-exec_file = "togif.bat" if platform.system() == "Windows" else "./togif.sh"
+exec_file = "scripts/togif.bat" if platform.system() == "Windows" else "scripts/togif.sh"
 
 
 class GifMaker:
@@ -24,7 +24,6 @@ class GifMaker:
         end_filename = ''.join(filename.split('.')[:-1])+".gif"
         temp_dir = conf["directories"]["tmp"]
         temp_filename = str(threading.get_native_id())
-        print(os.listdir())
         proc = Popen([exec_file, filename, temp_dir, temp_filename, end_filename,str(self.resolution),str(self.fps)],
                      stdout=PIPE, stderr=PIPE, stdin=PIPE,shell=False)
         time1 = time.time()
