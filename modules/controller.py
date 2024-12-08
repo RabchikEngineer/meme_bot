@@ -42,6 +42,10 @@ class MainController:
         cls.logger = logger
 
     @classmethod
+    def set_loop(cls,loop):
+        cls.loop = loop
+
+    @classmethod
     def set_users(cls,users):
         cls.users = users
 
@@ -54,12 +58,6 @@ class MainController:
         cls.logger.success("GIF Send watchdog started")
         while True:
             res = cls.queues.done_gif.get()
-            if res[1]=='gif_timeout':
-                cls.logger.warning(f"GIF Timeout after {res[2]} seconds")
-                asyncio.run_coroutine_threadsafe(
-                    cls.respond(res[0],['GIF',conf["answers"]['gif_timeout'].format(res[2])]), loop)
-                cls.queues.done_gif.task_done()
-                continue
             cls.logger.info("Sending GIF...")
             asyncio.run_coroutine_threadsafe(cls.send_gif(*res),loop)
             cls.queues.done_gif.task_done()

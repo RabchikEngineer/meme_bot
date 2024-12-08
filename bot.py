@@ -222,6 +222,7 @@ if __name__=='__main__':
 
     MainController.set_logger(logger)
     MainController.set_users(users)
+    MainController.set_loop(loop)
     users.load(users_ids)
 
     gif_send_watchdog=th.Thread(target=MainController.gif_send_watchdog,args=(loop,),daemon=True)
@@ -252,7 +253,7 @@ if __name__=='__main__':
         logger.info('Saving users...')
         users.save()
         logger.success('Users saved successfully')
-        # print('Остановка программы...')
+
         try:
             loop.run_until_complete(client.send_message(conf["admin_id"], 'Bot stopped...'))
         except ConnectionError:
