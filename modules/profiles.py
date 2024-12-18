@@ -21,6 +21,7 @@ class User:
         self.gifmaker = self._create_gifmaker()
         self.mode = self.config['mode']
         self.info = self.config['info']
+        self.saved_event=None
 
     def reload(self,from_config=False, default_config=False):
         if from_config:
@@ -35,6 +36,10 @@ class User:
         self.config['mode'] = self.mode
         with open(filename, 'w',encoding='utf-8') as f:
             json.dump(self.config,f,indent=2,ensure_ascii=False)
+
+
+    def set_event(self,event):
+        self.saved_event=event
 
     def set_info(self,sender):
         self.info = self._create_info(sender)
@@ -79,9 +84,10 @@ class User:
                 "first_name":sender.get("first_name"),
                 "last_name":sender.get("last_name")}
 
+
 class UserDict(dict):
 
-    def get_or_create(self, sender_or_id):
+    def get_or_create(self, sender_or_id) -> User:
         if isinstance(sender_or_id,int):
             sender_id = sender_or_id
             if sender_id in self.keys():
@@ -108,7 +114,7 @@ class UserDict(dict):
         for user_id in ids:
             self.update({user_id: User(user_id)})
 
-    def get_and_update(self,sender):
+    def get_and_update(self,sender) -> User:
         user=self.get(sender['id'])
         user.set_info(sender)
         return user

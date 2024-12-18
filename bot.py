@@ -47,6 +47,7 @@ async def bot(client):
     async def handler(event):
         logger.trace(f'Command request')
 
+
         sender = (await event.get_sender()).to_dict()
         user = users.get_or_create(sender)
 
@@ -71,10 +72,7 @@ async def bot(client):
                 buttons=[[Button.text("/example"),Button.text("/settings")],
                          [Button.text("/start"),Button.text("/clear_buttons")]]
             elif act=="6":
-                # print(dir(event))
-                # print(dir(client))
                 file=await client.upload_file(conf['example_file'])
-                # event.reply(client.File())
             elif act=="7":
                 buttons=Button.clear()
         if act and not ans:
@@ -89,61 +87,85 @@ async def bot(client):
     async def callback(event):
         logger.trace(f'Inline request')
         sender = (await event.get_sender()).to_dict()
-        user = users.get_or_create(sender)
+        event.message=(await event.get_message()).message
+        ctrl : MainController = await MainController.create(event)
+        user=ctrl.user
         data=event.data.decode()
         com=data.split('/')
-        msg = await event.get_message()
-        # print(event.data)
-        if com[0]=='m':
-            if com[1]=='settings':
-                await settings_page(msg,user)
-        elif com[0]=='ch':
+        msg = ctrl.message
 
-            if com[1]=='mode':
-                user.mode=user_modes[user_modes.index(user.mode)+1 if user_modes.index(user.mode)<len(user_modes)-1 else 0]
-                await settings_page(msg, user)
-                await event.answer('Режим изменён на '+user.mode)
+        match com[0]:
+            case 'm':
 
-            elif com[1]=='font':
-                await msg.edit("Выберите шрифт:",buttons=
-                    [[Button.inline(text[:-4],"font/"+str(num))] for num,text in enumerate(fonts)]+to_settings)
+                match com[1]:
 
-            elif com[1]=='pic_res':
-                await msg.edit("Выберите горизонтальное разрешение картинок в пикселях:", buttons=
-                [[Button.inline(str(res), "pic_res/" + str(res))] for res in conf['allowed_resolutions']['pic']]+
-                    to_settings)
+                    case 'settings':
+                        await settings_page(msg,user)
 
-            elif com[1]=='gif_res':
-                await msg.edit("Выберите горизонтальное разрешение гифок в пикселях:", buttons=
-                [[Button.inline(str(res), "gif_res/" + str(res))] for res in conf['allowed_resolutions']['gif']]+
-                    to_settings)
+            case 'ch':
 
-            elif com[1]=='gif_fps':
-                await msg.edit("Выберите FPS гифок:", buttons=
-                [[Button.inline(str(res), "gif_fps/" + str(res))] for res in conf['allowed_fps']] +
-                    to_settings)
+                match com[1]:
 
-            elif com[1]=='reset':
-                user.reload(from_config=True,default_config=True)
-                await settings_page(msg, user)
-                await event.answer("Все настройки успешно сброшены:)")
+                    case 'mode':
+                        user.mode=user_modes[user_modes.index(user.mode)+1 if user_modes.index(user.mode)<len(user_modes)-1 else 0]
+                        await settings_page(msg, user)
+                        await event.answer('Режим изменён на '+conf['modes'][user.mode])
 
-        elif com[0]=='font':
-            font = fonts[int(com[1])]
-            user.set_font(font)
-            await event.answer("Шрифт изменён на "+font[:-4])
+                    case 'font':
+                        await msg.edit("Выберите шрифт:",buttons=
+                            [[Button.inline(text[:-4],"font/"+str(num))] for num,text in enumerate(fonts)]+to_settings)
 
-        elif com[0]=='pic_res':
-            user.set_pic_res(int(com[1]))
-            await event.answer("Разрешение картинок изменено на " + com[1])
+                    case 'pic_res':
+                        await msg.edit("Выберите горизонтальное разрешение картинок в пикселях:", buttons=
+                        [[Button.inline(str(res), "pic_res/" + str(res))] for res in conf['allowed_resolutions']['pic']]+
+                            to_settings)
 
-        elif com[0]=='gif_res':
-            user.set_gif_res(int(com[1]))
-            await event.answer("Разрешение гифок изменено на " + com[1])
+                    case 'gif_res':
+                        await msg.edit("Выберите горизонтальное разрешение гифок в пикселях:", buttons=
+                        [[Button.inline(str(res), "gif_res/" + str(res))] for res in conf['allowed_resolutions']['gif']]+
+                            to_settings)
 
-        elif com[0]=='gif_fps':
-            user.set_gif_fps(int(com[1]))
-            await event.answer("FPS гифок изменён на " + com[1])
+                    case 'gif_fps':
+                        await msg.edit("Выберите FPS гифок:", buttons=
+                        [[Button.inline(str(res), "gif_fps/" + str(res))] for res in conf['allowed_fps']] +
+                            to_settings)
+
+                    case 'reset':
+                        user.reload(from_config=True,default_config=True)
+                        await settings_page(msg, user)
+                        await event.answer("Все настройки успешно сброшены:)")
+
+            case 'choose_action':
+                ctrl1 = await ctrl.restore(ctrl.sender)
+                match com[1]:
+
+                    case 'pic':
+                        logger.trace(f'{ctrl1.sender['username']} choosed pic')
+                        # await event.edit("Ты выбрал сделать пикчу")
+                        await event.delete()
+                        await ctrl1.pic_sequence()
+
+                    case 'gif':
+                        logger.trace(f'{ctrl1.sender['username']} gif')
+                        await event.delete()
+                        await ctrl1.gif_sequence()
+
+            case 'font':
+                font = fonts[int(com[1])]
+                user.set_font(font)
+                await event.answer("Шрифт изменён на "+font[:-4])
+
+            case 'pic_res':
+                user.set_pic_res(int(com[1]))
+                await event.answer("Разрешение картинок изменено на " + com[1])
+
+            case 'gif_res':
+                user.set_gif_res(int(com[1]))
+                await event.answer("Разрешение гифок изменено на " + com[1])
+
+            case 'gif_fps':
+                user.set_gif_fps(int(com[1]))
+                await event.answer("FPS гифок изменён на " + com[1])
 
         logger.log("INL",get_sender_names(sender)+f' --- {com[0]:8} /  {com[1]:10}')
         await event.answer()
@@ -151,51 +173,52 @@ async def bot(client):
     @client.on(events.NewMessage(pattern=r'^(?!\/)',func=event_filter))
     async def handler(event):
         logger.trace(f'Non-command request')
-        ctrl = await MainController.create(event)
+        ctrl : MainController = await MainController.create(event)
 
-        if ctrl.user.state == "idle":
+        match ctrl.user.state:
 
-            if ctrl.message.media:
+            case "idle":
 
+                if ctrl.message.media:
 
-                if ctrl.user.mode == "pic" and MimeChecker.is_image(ctrl.message.file):
+                    if ctrl.user.mode == "auto" and MimeChecker.is_auto_acceptable(ctrl.message.file):
 
-                    await ctrl.pic_sequence()
+                        await ctrl.auto_sequence()
 
-                elif ctrl.user.mode == "gif" and MimeChecker.is_video(ctrl.message.file):
+                    elif ctrl.user.mode == "pic" and MimeChecker.is_image(ctrl.message.file):
 
-                    await ctrl.gif_sequence()
+                        await ctrl.pic_sequence()
+
+                    elif ctrl.user.mode == "gif" and MimeChecker.is_video(ctrl.message.file):
+
+                        await ctrl.gif_sequence()
+
+                    else:
+                        await event.respond(conf["answers"]["filetype_error"])
 
                 else:
-                    await event.respond(conf["answers"]["filetype_error"])
+                    logger.log("TEXT", get_sender_names(ctrl.sender)+f' --- {ctrl.message.message}')
+                    await event.respond(conf["answers"]["no_image_message"]+conf["answers"]["reminder"])
 
-                # ctrl.user.state('idle')
+            case "waiting_for_text":
 
-            else:
-                logger.log("TEXT", get_sender_names(ctrl.sender)+f' --- {ctrl.message.message}')
-                await event.respond(conf["answers"]["no_image_message"]+conf["answers"]["reminder"])
+                if ctrl.message.message:
+                    ctrl.user.state.set('idle')
+                    await ctrl.pic_sequence()
 
-        elif ctrl.user.state=="waiting_for_text":
-
-            if ctrl.message.message:
-                await ctrl.pic_sequence()
-                ctrl.user.state.set('idle')
-
-            else:
-                await ctrl.event.respond(conf["answers"]["text_request"])
-
+                else:
+                    await ctrl.event.respond(conf["answers"]["text_request"])
 
 
     await client.run_until_disconnected()
 
 
 if __name__=='__main__':
-    # Variables
-    user_modes = ['pic', 'gif']
-
     # Read config
     with open(config_path, encoding='utf-8') as f:
         conf = json.load(f)
+
+    user_modes = conf['modes'].values()
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
@@ -207,7 +230,7 @@ if __name__=='__main__':
 
     users = UserDict()
     users_ids = [int(x) for x in os.listdir(conf['directories']['user_configs']) if os.path.isfile(x)]
-    fonts = os.listdir(conf["directories"]["fonts"])
+    fonts = sorted(os.listdir(conf["directories"]["fonts"]))
     to_settings = [[Button.inline("Назад", "m/settings")]]
 
     log_format = '<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | {message}'

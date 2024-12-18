@@ -45,6 +45,10 @@ class MimeChecker:
         return extension
 
     @classmethod
+    def is_auto_acceptable(cls,mime_type):
+        return cls.is_image(mime_type) or cls.is_video(mime_type)
+
+    @classmethod
     def is_image(cls,mime_type):
         if not isinstance(mime_type,str):
             mime_type = mime_type.mime_type

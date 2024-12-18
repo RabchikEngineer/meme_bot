@@ -1,36 +1,49 @@
 import asyncio
-
-from modules.auxiliary import config_path, get_sender_names,pretty_file_size, GifQueue,ActiveThreads
 import json, time
 import threading as th
+
+from loguru import logger
+from telethon import TelegramClient, events, Button
+
+from modules.auxiliary import config_path, get_sender_names,pretty_file_size, GifQueue,ActiveThreads, MimeChecker
+from modules.profiles import UserDict, User
 # from concurrent.futures import ThreadPoolExecutor
 
 with open(config_path, encoding='utf-8') as f:
     conf = json.load(f)
 
 
-
 class MainController:
 
-    users = None
-    client = None
-    logger = None
+    users: UserDict = None
+    client: TelegramClient = None
+    logger: logger = None
     active_threads=ActiveThreads()
     queues = GifQueue()
     gif_overcount_lock = th.Lock()
     in_work = th.Lock()
 
-    def __init__(self ,event):
-        self.event = event
+    def __init__(self, event):
+        self.event: events.newmessage.NewMessage.Event = event
         self.message = event.message
-        self.sender=None
-        self.user=None
+        self.sender: dict = None
+        self.user: User = None
 
     @classmethod
-    async def create(cls,event):
+    async def create(cls, event):
         self=MainController(event)
         self.sender = (await event.get_sender()).to_dict()
         self.user = self.users.get_or_create(self.sender)
+        return self
+
+    @classmethod
+    async def restore(cls, sender):
+        user = cls.users.get_or_create(sender)
+        event = user.saved_event
+        user.set_event(None)
+        self = MainController(event)
+        self.sender = (await event.get_sender()).to_dict()
+        self.user = user
         return self
 
     @classmethod
@@ -49,10 +62,6 @@ class MainController:
     def set_users(cls,users):
         cls.users = users
 
-    # @classmethod
-    # def set_queue(cls,queues.done_gif):
-    #     cls.queues.done_gif = queues.done_gif
-
     @classmethod
     def gif_send_watchdog(cls,loop):
         cls.logger.success("GIF Send watchdog started")
@@ -61,7 +70,6 @@ class MainController:
             cls.logger.info("Sending GIF...")
             asyncio.run_coroutine_threadsafe(cls.send_gif(*res),loop)
             cls.queues.done_gif.task_done()
-
 
     @classmethod
     def gif_start_watchdog(cls,loop):
@@ -88,6 +96,25 @@ class MainController:
         await self.event.respond(message[1])
         cls.logger.log(message[0],get_sender_names(self.sender) + f' --- {message[1][:20]}')
 
+    def save_event(self):
+        self.user.set_event(self.event)
+
+    async def auto_sequence(self):
+
+
+        buttons=[
+            Button.inline('Картинку', 'choose_action/pic'),
+            Button.inline('Гифку', 'choose_action/gif')
+        ]
+        if MimeChecker.is_image(self.message.file):
+            buttons.pop(1)
+
+        elif MimeChecker.is_video(self.message.file):
+            buttons.pop(0)
+
+        await self.event.respond(conf['answers']['choose'],buttons=buttons)
+        self.save_event()
+
     async def pic_sequence(self):
         # file_extension=MimeChecker.get_file_extension(self.event.self.message.file)
         filename = f'{conf["directories"]["pictures"]}' \
@@ -111,7 +138,6 @@ class MainController:
                         (self.message.message.replace("\n\n", " ⮓⮓ ").
                          replace("\n"," ⮓ ") if self.message.message != "" else "<Nothing>"))
         await self.event.respond(file=await self.client.upload_file(final_filename))
-
 
     async def gif_sequence(self):
         filename = f'{conf["directories"]["gif"]}' \
