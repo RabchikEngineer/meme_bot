@@ -240,7 +240,7 @@ if __name__=='__main__':
     logger.level("INL", no=22, color="<yellow>", icon="I")
     logger.level("COM", no=22, color="<yellow>", icon="C")
     logger.remove()
-    # logger.add(conf["log_filename"], level=2, format=log_format)
+    logger.add(conf["log_filename"], level=2, format=log_format)
     logger.add(sys.stdout, level=10, format=log_format)
 
     MainController.set_logger(logger)
