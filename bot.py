@@ -87,7 +87,7 @@ async def bot(client):
     async def callback(event):
         logger.trace(f'Inline request')
         sender = (await event.get_sender()).to_dict()
-        event.message=(await event.get_message()).message
+        event.message=(await event.get_message())
         ctrl : MainController = await MainController.create(event)
         user=ctrl.user
         data=event.data.decode()
@@ -218,7 +218,7 @@ if __name__=='__main__':
     with open(config_path, encoding='utf-8') as f:
         conf = json.load(f)
 
-    user_modes = list(conf['modes'].values())
+    user_modes = list(conf['modes'].keys())
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
@@ -230,7 +230,7 @@ if __name__=='__main__':
 
     users = UserDict()
     users_ids = [int(x) for x in os.listdir(conf['directories']['user_configs']) if os.path.isfile(x)]
-    fonts = sorted(os.listdir(conf["directories"]["fonts"]))
+    fonts = sorted(os.listdir(conf["directories"]["fonts"]))[::-1]
     to_settings = [[Button.inline("Назад", "m/settings")]]
 
     log_format = '<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | {message}'

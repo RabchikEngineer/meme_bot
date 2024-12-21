@@ -61,7 +61,7 @@ class User:
         self.reload()
 
     def get_stats(self):
-        return f'\nТекущий режим: {self.mode}\nТекущий шрифт: {self.config["pic"]["font"][:-4]}\n'+\
+        return f'\nТекущий режим: {conf['modes'][self.mode]}\nТекущий шрифт: {self.config["pic"]["font"][:-4]}\n'+\
                 'Разрешения:\n    '+\
                 f'Картинок - {self.config["pic"]["sizes"]["resolution"]}\n    '+\
                 f'Гифок: - {self.config["gif"]["resolution"]}\n'+\
