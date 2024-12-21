@@ -140,13 +140,13 @@ async def bot(client):
                 match com[1]:
 
                     case 'pic':
-                        logger.trace(f'{ctrl1.sender['username']} choosed pic')
+                        logger.trace(f'{ctrl1.sender["username"]} choosed pic')
                         # await event.edit("Ты выбрал сделать пикчу")
                         await event.delete()
                         await ctrl1.pic_sequence()
 
                     case 'gif':
-                        logger.trace(f'{ctrl1.sender['username']} gif')
+                        logger.trace(f'{ctrl1.sender["username"]} gif')
                         await event.delete()
                         await ctrl1.gif_sequence()
 
@@ -218,7 +218,7 @@ if __name__=='__main__':
     with open(config_path, encoding='utf-8') as f:
         conf = json.load(f)
 
-    user_modes = conf['modes'].values()
+    user_modes = list(conf['modes'].values())
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
