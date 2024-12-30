@@ -1,5 +1,6 @@
 {
-  "mode": "pic",
+  "mode": "auto",
+  "auto_select": true,
   "info": {
     "username": null,
     "first_name": null,

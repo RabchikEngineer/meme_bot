@@ -94,6 +94,8 @@ async def bot(client):
         com=data.split('/')
         msg = ctrl.message
 
+        logger.log("INL", get_sender_names(sender) + f' --- {com[0]:8} /  {com[1]:10}')
+
         match com[0]:
             case 'm':
 
@@ -136,7 +138,7 @@ async def bot(client):
                         await event.answer("Все настройки успешно сброшены:)")
 
             case 'choose_action':
-                ctrl1 = await ctrl.restore(ctrl.sender)
+                ctrl1 = await MainController.restore(ctrl)
                 match com[1]:
 
                     case 'pic':
@@ -167,7 +169,6 @@ async def bot(client):
                 user.set_gif_fps(int(com[1]))
                 await event.answer("FPS гифок изменён на " + com[1])
 
-        logger.log("INL",get_sender_names(sender)+f' --- {com[0]:8} /  {com[1]:10}')
         await event.answer()
 
     @client.on(events.NewMessage(pattern=r'^(?!\/)',func=event_filter))
@@ -270,8 +271,12 @@ if __name__=='__main__':
         logger.error('Connection error')
     finally:
         logger.info('Waiting for modules...')
+
+        # this part need a fix
         MainController.queues.req_gif.join()
-        MainController.queues.done_gif.join()
+        MainController.active_threads.wait_for_completion()
+        MainController.queues.done_gif.join()  # idk, if press Ctrl+C, this passes even if queue isn't empty
+
         logger.success("Modules stop")
         logger.info('Saving users...')
         users.save()

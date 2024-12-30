@@ -3,7 +3,7 @@ import threading
 
 from modules.auxiliary import config_path
 from subprocess import Popen,PIPE
-import json,os,platform,time
+import json,platform,time
 import asyncio
 
 with open(config_path, 'r', encoding='utf-8') as f:
@@ -40,16 +40,20 @@ class GifMaker:
         temp_dir = conf["directories"]["tmp"]
         temp_filename = str(threading.get_native_id())
 
+        proc=None
         try:
             proc = Popen(
                 [exec_file, filename, temp_dir, temp_filename, end_filename, str(self.resolution), str(self.fps)],
                 stdout=PIPE, stderr=PIPE, stdin=PIPE, shell=False)
             time1 = time.time()
             proc.wait(conf['gif_timeout'])
+            if proc.returncode!=0:
+                raise Exception
         except subprocess.TimeoutExpired:
             self.handle_error("timeout",ctrl, timeout=conf["gif_timeout"])
             return
         except:
+            ctrl.logger.error(proc.communicate()[1].decode('utf-8').replace("\n", " "))
             self.handle_error("other",ctrl)
             return
         finally:
@@ -59,6 +63,6 @@ class GifMaker:
 
         res = proc.communicate()[1]
         if res:
-            ctrl.logger.error(res.decode('utf-8').replace("\n"," "))
+            ctrl.logger.trace(res.decode('utf-8').replace("\n"," "))
 
         queue.put([ctrl, end_filename, time.time()-time1])

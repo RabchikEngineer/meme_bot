@@ -1,7 +1,4 @@
 import pathlib,json,os,queue
-
-#variables
-import sys
 import threading
 
 config_path = 'config.json'
@@ -81,11 +78,27 @@ class GifQueue:
 class ActiveThreads:
     n=0
 
+
+    def __init__(self, lock: threading.Lock):
+        self.in_work=lock
+
+    def update_lock(self):
+        if self.n>0:
+            self.in_work.acquire()
+        else:
+            self.in_work.release()
+
+    def wait_for_completion(self):
+        self.in_work.acquire()
+        self.in_work.release()
+
     def inc(self):
         self.n+=1
+        self.update_lock()
 
     def dec(self):
         self.n-=1
+        self.update_lock()
 
     def __gt__(self, other):
         return self.n>other

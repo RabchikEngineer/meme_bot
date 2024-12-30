@@ -18,10 +18,9 @@ class MainController:
     users: UserDict = None
     client: TelegramClient = None
     logger: logger = None
-    active_threads=ActiveThreads()
+    active_threads=ActiveThreads(th.Lock())
     queues = GifQueue()
     gif_overcount_lock = th.Lock()
-    in_work = th.Lock()
 
     def __init__(self, event):
         self.event: events.newmessage.NewMessage.Event = event
@@ -31,16 +30,15 @@ class MainController:
 
     @classmethod
     async def create(cls, event):
-        self=MainController(event)
+        self=cls(event)
         self.sender = (await event.get_sender()).to_dict()
         self.user = self.users.get_or_create(self.sender)
         return self
 
     @classmethod
-    async def restore(cls, sender):
-        user = cls.users.get_or_create(sender)
-        event = user.saved_event
-        user.set_event(None)
+    async def restore(cls, new_ctrl):
+        user = cls.users.get_or_create(new_ctrl.sender)
+        event = user.saved_events.get(new_ctrl.event.message.id)
         self = MainController(event)
         self.sender = (await event.get_sender()).to_dict()
         self.user = user
@@ -67,8 +65,11 @@ class MainController:
         cls.logger.success("GIF Send watchdog started")
         while True:
             res = cls.queues.done_gif.get()
+            print('get item')
             cls.logger.info("Sending GIF...")
-            asyncio.run_coroutine_threadsafe(cls.send_gif(*res),loop)
+            # asyncio.run_coroutine_threadsafe(cls.send_gif(*res),loop)
+            future=asyncio.run_coroutine_threadsafe(cls.send_gif(*res),loop)
+            print(future.result(),11)
             cls.queues.done_gif.task_done()
 
     @classmethod
@@ -96,8 +97,8 @@ class MainController:
         await self.event.respond(message[1])
         cls.logger.log(message[0],get_sender_names(self.sender) + f' --- {message[1][:20]}')
 
-    def save_event(self):
-        self.user.set_event(self.event)
+    def save_event(self, message_id):
+        self.user.saved_events.add(message_id,self.event)
 
     async def auto_sequence(self):
 
@@ -112,8 +113,8 @@ class MainController:
         elif MimeChecker.is_video(self.message.file):
             buttons.pop(0)
 
-        await self.event.respond(conf['answers']['choose'],buttons=buttons)
-        self.save_event()
+        ans = await self.event.respond(conf['answers']['choose'],buttons=buttons)
+        self.save_event(ans.id)
 
     async def pic_sequence(self):
         # file_extension=MimeChecker.get_file_extension(self.event.self.message.file)
@@ -136,7 +137,7 @@ class MainController:
         # await client.send_file(sender_id, final_filename)
         self.logger.log("PIC", get_sender_names(self.sender) + " --- " +
                         (self.message.message.replace("\n\n", " ⮓⮓ ").
-                         replace("\n"," ⮓ ") if self.message.message != "" else "<Nothing>"))
+                        replace("\n"," ⮓ ") if self.message.message != "" else "<Nothing>"))
         await self.event.respond(file=await self.client.upload_file(final_filename))
 
     async def gif_sequence(self):

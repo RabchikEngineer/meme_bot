@@ -2,6 +2,7 @@ from modules.auxiliary import config_path
 import json, os
 from modules.square_memes_script import PicMaker
 from modules.gif_script import GifMaker
+from expiring_dict import ExpiringDict
 
 
 with open(config_path, encoding='utf-8') as f:
@@ -21,7 +22,7 @@ class User:
         self.gifmaker = self._create_gifmaker()
         self.mode = self.config['mode']
         self.info = self.config['info']
-        self.saved_event=None
+        self.saved_events = UserEvents()
 
     def reload(self,from_config=False, default_config=False):
         if from_config:
@@ -36,10 +37,6 @@ class User:
         self.config['mode'] = self.mode
         with open(filename, 'w',encoding='utf-8') as f:
             json.dump(self.config,f,indent=2,ensure_ascii=False)
-
-
-    def set_event(self,event):
-        self.saved_event=event
 
     def set_info(self,sender):
         self.info = self._create_info(sender)
@@ -130,5 +127,18 @@ class UserState:
 
     def set(self,state):
         self.state = state
+
+
+class UserEvents:
+
+    def __init__(self):
+        self.events_dict=ExpiringDict(max_age_seconds=conf['expiration_times']['user_events'])
+
+    def add(self, message_id, event):
+        self.events_dict.update({message_id:event})
+
+    def get(self, message_id):
+        return self.events_dict.get(message_id)
+
 
 
