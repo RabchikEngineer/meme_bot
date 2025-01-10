@@ -52,8 +52,9 @@ class GifMaker:
         except subprocess.TimeoutExpired:
             self.handle_error("timeout",ctrl, timeout=conf["gif_timeout"])
             return
-        except:
-            ctrl.logger.error(proc.communicate()[1].decode('utf-8').replace("\n", " "))
+        except Exception as e:
+            ctrl.logger.error(proc.communicate()[1].decode('utf-8').replace("\n", " ") if proc is not None
+                              else e.args)
             self.handle_error("other",ctrl)
             return
         finally:

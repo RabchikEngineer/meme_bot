@@ -65,11 +65,10 @@ class MainController:
         cls.logger.success("GIF Send watchdog started")
         while True:
             res = cls.queues.done_gif.get()
-            print('get item')
             cls.logger.info("Sending GIF...")
             # asyncio.run_coroutine_threadsafe(cls.send_gif(*res),loop)
             future=asyncio.run_coroutine_threadsafe(cls.send_gif(*res),loop)
-            print(future.result(),11)
+            # print(future.result(),11)
             cls.queues.done_gif.task_done()
 
     @classmethod
@@ -86,11 +85,13 @@ class MainController:
     @classmethod
     async def send_gif(cls, self, filename, ex_time):
         # await client.send_file(sender['id'], final_filename)
+        string_time=time.strftime("%Mm %Ss", time.localtime(ex_time))
         file = await cls.client.upload_file(filename)
-        await self.event.respond(conf["answers"]["done"]+f'\nРазмер: {pretty_file_size(filename)}Mb')
+        await self.event.respond(conf["answers"]["done"]+f'\nРазмер: {pretty_file_size(filename)}Mb'
+                                                         f'\nВремя конвертации {string_time}')
         await self.event.respond(file=file)
         cls.logger.log("GIF",get_sender_names(self.sender) +
-                       f' --- done {time.strftime("%Mm %Ss", time.localtime(ex_time))}  {pretty_file_size(filename)}M')
+                       f' --- done {string_time}  {pretty_file_size(filename)}M')
 
     @classmethod
     async def respond(cls, self, message):
