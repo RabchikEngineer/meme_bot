@@ -1,0 +1,8 @@
+expiring-dict==1.1.1
+loguru==0.7.2
+pillow==11.0.0
+pyaes==1.6.1
+pyasn1==0.6.1
+rsa==4.9
+sortedcontainers==2.4.0
+Telethon==1.38.1
