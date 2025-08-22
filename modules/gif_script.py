@@ -42,11 +42,14 @@ class GifMaker:
 
         proc=None
         try:
+            ctrl.logger.debug("Starting gif conversion")
             proc = Popen(
                 [exec_file, filename, temp_dir, temp_filename, end_filename, str(self.resolution), str(self.fps)],
                 stdout=PIPE, stderr=PIPE, stdin=PIPE, shell=False)
+            ctrl.logger.debug(f"Started gif conversion, waiting for process {proc.pid}")
             time1 = time.time()
             proc.wait(conf['gif_timeout'])
+            ctrl.logger.debug(f"Conversion process exit with {proc.returncode}")
             if proc.returncode!=0:
                 raise Exception
         except subprocess.TimeoutExpired:
