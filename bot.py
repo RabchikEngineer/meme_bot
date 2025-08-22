@@ -257,6 +257,9 @@ if __name__=='__main__':
 
     signal.signal(signal.SIGTERM, sigterm_handler)
 
+    # allowing gif script to execute
+    os.chmod("scripts/togif.sh",0o755)
+
     try:
         # loop.create_task(MainController.gif_watchdog())
         loop.run_until_complete(asyncio.gather(bot(client)))
